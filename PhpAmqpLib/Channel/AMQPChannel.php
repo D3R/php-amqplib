@@ -28,6 +28,9 @@ class AMQPChannel extends AbstractChannel
     /** @var bool */
     protected $auto_decode;
 
+    /** @var bool Whether to nack a message without a callback */
+    protected $nack_if_no_callback = false;
+
     /**
      * These parameters will be passed to function in case of basic_return:
      *    param int $reply_code
@@ -981,6 +984,8 @@ class AMQPChannel extends AbstractChannel
 
         if (isset($this->callbacks[$consumer_tag])) {
             call_user_func($this->callbacks[$consumer_tag], $message);
+        } else if ($this->nack_if_no_callback) {
+            $this->basic_nack($delivery_tag, false, true);
         }
     }
 
@@ -1447,6 +1452,18 @@ class AMQPChannel extends AbstractChannel
         unset($this->published_messages[$index]);
 
         return $message;
+    }
+
+    /**
+     * Sets the behaviour for handling a message with no callback
+     *
+     * If set to true the message will be nack'd and requeued
+     *
+     * @param bool $nack_if_no_callback
+     */
+    public function set_nack_if_no_callback($bool)
+    {
+        $this->nack_if_no_callback = $bool;
     }
 
     /**
